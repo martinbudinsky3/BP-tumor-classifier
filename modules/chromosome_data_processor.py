@@ -6,6 +6,7 @@ def process_chromosome_data(data):
     data = process_values(data)
     data = rename_columns(data)
     data = remove_rows(data)
+    data = cast_column_types(data)
     
     return data
     
@@ -53,4 +54,12 @@ def rename_columns(data):
 def remove_rows(data):
     data = data[(data['Copy Number'] != 'LOH') & (data['Copy Number'] != 'Allelic Imbalance') & (data['Copy Number'] != 'Homozygous Copy Loss')]
     
+    return data
+
+
+def cast_column_types(data):
+    data['Start'] = data['Start'].astype(str).astype('int64')
+    data['End'] = data['End'].astype(str).astype('int64')
+    data['Copy Number'] = data['Copy Number'].astype(str).astype('int64')
+        
     return data
