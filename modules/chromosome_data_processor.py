@@ -53,6 +53,7 @@ def rename_columns(data):
 
 def remove_rows(data):
     data = data[(data['Copy Number'] != 'LOH') & (data['Copy Number'] != 'Allelic Imbalance') & (data['Copy Number'] != 'Homozygous Copy Loss')]
+    data = data[(data['Chromosome'] != 'X') & (data['Chromosome'] != 'Y')]
     
     return data
 
