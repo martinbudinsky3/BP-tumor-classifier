@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def process_chromosome_data(data):    
+def process_tumor_data(data):    
     data = reshape_data(data)
     data = process_values(data)
     data = rename_columns(data)
