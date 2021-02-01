@@ -10,6 +10,8 @@ def process_tumor_data_2(data):
     data = rename_columns(data)
     data = remove_rows(data)
     data = cast_column_types(data)
+    data = correct_length(data)
+    data.reset_index(inplace=True, drop=True)
     
     return data
 
