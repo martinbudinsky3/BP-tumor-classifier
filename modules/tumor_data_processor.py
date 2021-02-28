@@ -7,7 +7,6 @@ def process_tumor_data(data):
     data = rename_columns(data)
     data = remove_rows(data)
     data = cast_column_types(data)
-    data = correct_length(data)
     data.reset_index(inplace=True, drop=True)
     
     return data
@@ -65,10 +64,4 @@ def cast_column_types(data):
     data['End'] = data['End'].astype(str).astype('int64')
     data['Copy Number'] = data['Copy Number'].astype(str).astype('int64')
         
-    return data
-
-
-def correct_length(data):
-    data['Length'] = data['Length'].apply(lambda x: x - 1)
-    
     return data
