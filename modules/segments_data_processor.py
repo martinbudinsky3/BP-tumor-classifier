@@ -37,6 +37,15 @@ class SegmentsDataProcessor:
         ai_data.reset_index(inplace=True, drop=True)
         
         return ai_data
+    
+    
+    def get_loh_segments(self):
+        loh_data = self.data.copy()
+        loh_data = self.remove_not_loh_rows(loh_data)
+        loh_data = self.drop_event_column(loh_data)
+        loh_data.reset_index(inplace=True, drop=True)
+        
+        return loh_data
 
 
     def reshape_data(self, data):
@@ -122,6 +131,12 @@ class SegmentsDataProcessor:
     
     def remove_not_ai_rows(self, data):
         data = data.loc[data['Event'] == 'Allelic Imbalance']
+
+        return data
+    
+    
+    def remove_not_loh_rows(self, data):
+        data = data.loc[data['Event'] == 'LOH']
 
         return data
     
