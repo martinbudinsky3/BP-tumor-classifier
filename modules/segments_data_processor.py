@@ -23,8 +23,6 @@ class SegmentsDataProcessor:
         cnv_data = self.rename_event_column(cnv_data)
         cnv_data = self.transform_cn_values(cnv_data)
         cnv_data = self.cast_cn(cnv_data)
-        if sex == 'male':
-            cnv_data = self.correct_cn(cnv_data)
         cnv_data.reset_index(inplace=True, drop=True)
         
         return cnv_data
@@ -120,12 +118,6 @@ class SegmentsDataProcessor:
     def cast_cn(self, data):
         data.loc[:,'Copy Number'] = data.loc[:,'Copy Number'].astype(str).astype('int64')
 
-        return data
-    
-    
-    def correct_cn(self, data):
-        data.loc[data['Chromosome'] == 'X', 'Copy Number'] = data.loc[data['Chromosome'] == 'X', 'Copy Number'].apply(lambda x: x - 1) 
-        
         return data
     
     
