@@ -1,11 +1,11 @@
 import pandas as pd
 
+
 class SegmentsDataProcessor:
     
     def __init__(self, filename):
         self.data = pd.read_csv(filename, sep='\t', comment='#')
         self.data = self.process_data(self.data)
-    
     
     def process_data(self, data):
         data = self.reshape_data(data)
