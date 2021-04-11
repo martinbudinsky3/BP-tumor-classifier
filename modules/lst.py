@@ -1,3 +1,7 @@
+import pandas as pd
+import numpy as np
+import scipy.stats as stats
+
 from utils import init_lengths, init_centromeres, init_chromosome_names, Mb
 
 LST_SMbs = [x for x in range(3, 12)]
@@ -9,7 +13,7 @@ chromosome_names = init_chromosome_names()
 def lst(data, vcf_reader, sample_name, LST_SMb_param):
     data = fill_segments(data)
     dna_index = count_dna_index(data)
-    data = count_allele_freqs(data, vcf_reader, sample)
+    data = count_allele_freqs(data, vcf_reader, sample_name)
     data = coercing(data)
     
     # count lst only for LST_SMb_param size
@@ -21,7 +25,7 @@ def lst(data, vcf_reader, sample_name, LST_SMb_param):
     else:
         lsts = {}
         for LST_SMb in LST_SMbs:
-            lsts[str(LST_SMb)+' Mb'] = count_lsts(data, individual_LST_SMb*Mb)
+            lsts[str(LST_SMb)+' Mb'] = count_lsts(data, LST_SMb*Mb)
 
         return lsts, dna_index      
 
@@ -252,7 +256,7 @@ def coercing(data, S_small=3*Mb):
             return df
 
 
-def count_lsts(data, LST_SMb=11*Mb):
+def count_lsts(data, LST_SMb=11*Mb, S_small=3*Mb):
 
     lsts = 0
     for index, row in data.iterrows():
