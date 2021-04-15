@@ -27,7 +27,10 @@ class HRD:
     def test_lst(self, LST_SMb=None):
         if self.cnv_data is None:
             self.cnv_data = self.sdp.get_cnv_segments()
-        vcf_reader = vcf.Reader(filename=self.vcf_file)
+        vcf_reader = None
+        if not self.vcf_file is None:
+            vcf_reader = vcf.Reader(filename=self.vcf_file)
+            
         return lst(self.cnv_data, vcf_reader, self.vcf_sample_name, LST_SMb)
     
     
@@ -43,7 +46,7 @@ class HRD:
         return tai(self.loh_data)
     
     
-    def test_all(self, LST_SMb=10):
+    def test_all(self, LST_SMb=11):
         lst_score, dna_index = self.test_lst(LST_SMb)
         tai_score = self.test_tai()
         loh_score = self.test_loh()
