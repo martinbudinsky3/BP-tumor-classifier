@@ -43,7 +43,7 @@ class HRD:
     def test_loh(self):
         if self.loh_data is None:
             self.loh_data = self.sdp.get_loh_segments()
-        return tai(self.loh_data)
+        return loh(self.loh_data)
     
     
     def test_all(self, LST_SMb=11):

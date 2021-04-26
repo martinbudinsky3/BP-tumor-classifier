@@ -258,7 +258,7 @@ def have_equal_allele_freqs(segment1, segment2):
 def coercing(data, count_af=True, S_small=3*Mb):
     df = data.copy()
 
-    while True:
+    while len(df) > 0:
 
         # get smallest segment
         row = df[df['Length'] == df['Length'].min()].iloc[0]
