@@ -9,8 +9,7 @@ def tai(data, TELOMERE_SIZE=2*Mb):
         chr_data = data.loc[data['Chromosome'] == _chr]
         chr_len = lengths.loc[_chr, 'Length']
 
-        tais_start = chr_data.loc[chr_data['Start'] < TELOMERE_SIZE]
-        tais_end = chr_data.loc[chr_data['End'] > chr_len - TELOMERE_SIZE]
-        ntai += len(tais_start.index) + len(tais_end.index)
+        tais_segments = chr_data.loc[(chr_data['Start'] < TELOMERE_SIZE) | (chr_data['End'] > chr_len - TELOMERE_SIZE)]
+        ntai += len(tais_segments.index)
 
     return ntai

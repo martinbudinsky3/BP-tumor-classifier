@@ -50,9 +50,9 @@ def insert_row(df, _chr, cn, length, start, end, index):
 def fill_segments(data):
     df = data.copy()
     index_df = 0
-
+    normal_cn = 2
+    
     for index, row in data.iterrows():
-        normal_cn = 2
 
         # first cnv region in chromosome
         if index == 0 or data.loc[index-1, 'Chromosome'] != data.loc[index, 'Chromosome']:
@@ -90,7 +90,7 @@ def remove_centromeres(data):
         # drop segments that start and end in centromere  
         data = data.drop(data[(data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)].index)
 
-        # cut segment that overlaps centromere  
+        # cut segment that overlaps centromere from both sides
         row_df = data.loc[(data['Chromosome'] == _chr) & (data['Start'] < centromere_start) & (data['End'] > centromere_end)]
         if not row_df.empty:
             row = row_df.iloc[0]
@@ -122,12 +122,11 @@ def name_chr_arms(data):
 def count_dna_index(data):
     cns = list(data['Copy Number'])
     weights = list(data['Length'])
-
+    normal_cn = 2
+    
     for _chr in chromosome_names:
         chr_segments = data[data['Chromosome'] == _chr]
         if chr_segments.empty:
-            normal_cn = 2
-
             centromere_start = centromeres.loc[centromeres['Chromosome'] == _chr, 'Start'].iloc[0]
             centromere_end = centromeres.loc[centromeres['Chromosome'] == _chr, 'End'].iloc[0]
             chromosome_end = lengths.loc[_chr, 'Length']
@@ -141,26 +140,25 @@ def count_dna_index(data):
     return dna_index
 
 
-def has_quality(record, qual_threshold = 200):
+# function that checks if vcf record has required quality
+def has_quality(record, qual_threshold = 50):
     info = record.INFO
     return record.QUAL > qual_threshold and ('QD' not in info.keys() or info['QD'] > 10.0) and ('MQ' not in info.keys() or info['MQ'] > 40.0) \
         and ('FS' not in info.keys() or info['FS'] < 30.0 ) and ('SOR' not in info.keys() or info['SOR'] < 3.0) \
         and ('MQRankSum' not in info.keys() or info['MQRankSum'] > -12.5) and ('ReadPosRankSum' not in info.keys() or info['ReadPosRankSum'] > -8.0)
 
 
+# function for counting allelic frequencies for each segment
 def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
     data_with_af = data.copy()
     data_with_af['Allele Frequencies'] = [list() for x in range(len(data_with_af.index))]
 
     for index, row in data_with_af.iterrows():
 
-        segment_records = None
         try:
             segment_records = vcf_reader.fetch(row['Chromosome'], row['Start'], row['End'])
-        except ValueError:
-            continue
-        
             allele_freqs = []
+        
             for record in segment_records:
                 sample_data = record.genotype(sample).data
 
@@ -171,6 +169,9 @@ def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
                     allele_freqs.append(allele_freq)
 
             data_with_af.at[index, 'Allele Frequencies'] = allele_freqs
+
+        except (ValueError, AttributeError) as e:
+            continue
 
     return data_with_af
 
@@ -205,7 +206,7 @@ def insert_row_with_af(df, _chr, cn, length, start, end, allele_freqs, arm, inde
 
 
 # linking adjacent segments of small filtered out segment - segments without allelic frequencies 
-def link_segments_without_af(df, prev, _next, small):
+def link_segments_without_af(df, prev, _next):
     df = df.drop(index=prev.name)
     df = df.drop(index=_next.name)
 
@@ -231,7 +232,7 @@ def link_segments(df, prev, _next, small):
     return df
 
 
-# statistical tests for equality of allelic frequencies for two segments
+# statistical tests for equality of allelic frequencies of two segments
 def have_equal_allele_freqs(segment1, segment2):
     alpha = 0.05
     min_n = 3
@@ -277,7 +278,7 @@ def coercing(data, count_af=True, S_small=3*Mb):
                     
                     # if sample has vcf data check allelic frequencies else join only based on copy number
                     if not count_af:
-                        df = link_segments_without_af(df, prev, _next, row)
+                        df = link_segments_without_af(df, prev, _next)
                     elif have_equal_allele_freqs(prev, _next):
                         df = link_segments(df, prev, _next, row)
 
@@ -286,7 +287,9 @@ def coercing(data, count_af=True, S_small=3*Mb):
 
         # if there are no small segments left -> end
         else:
-            return df
+            break
+        
+    return df
 
 
 def count_lsts(data, LST_SMb=11*Mb, S_small=3*Mb):
