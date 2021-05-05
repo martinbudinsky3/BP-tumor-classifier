@@ -36,7 +36,7 @@ def lst(data, vcf_reader=None, sample_name=None, LST_SMb_param=11):
 
 
 def insert_row(df, _chr, cn, length, start, end, index):
-    normal_segment = pd.DataFrame({
+    new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
         'Copy Number': [ cn ],
         'Length': [length],
@@ -44,7 +44,7 @@ def insert_row(df, _chr, cn, length, start, end, index):
         'End': [ end ]
     })
 
-    return pd.concat([df.iloc[:index], normal_segment, df.iloc[index:]]).reset_index(drop=True)
+    return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
 
 
 def fill_segments(data):
@@ -178,7 +178,7 @@ def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
 
 # insert new segment that was created by linking - segment without allelic frequencies
 def insert_row_without_af(df, _chr, cn, length, start, end, arm, index):
-    normal_segment = pd.DataFrame({
+    new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
         'Copy Number': [ cn ],
         'Length': [length],
@@ -187,12 +187,12 @@ def insert_row_without_af(df, _chr, cn, length, start, end, arm, index):
         'Arm': [arm]
     })
 
-    return pd.concat([df.iloc[:index], normal_segment, df.iloc[index:]]).reset_index(drop=True)
+    return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
 
 
 # insert new segment that was created by linking 
 def insert_row_with_af(df, _chr, cn, length, start, end, allele_freqs, arm, index):
-    normal_segment = pd.DataFrame({
+    new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
         'Copy Number': [ cn ],
         'Length': [length],
@@ -202,7 +202,7 @@ def insert_row_with_af(df, _chr, cn, length, start, end, allele_freqs, arm, inde
         'Arm': [arm]
     })
 
-    return pd.concat([df.iloc[:index], normal_segment, df.iloc[index:]]).reset_index(drop=True)
+    return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
 
 
 # linking adjacent segments of small filtered out segment - segments without allelic frequencies 
