@@ -157,7 +157,7 @@ class SegmentsDataProcessor2(SegmentsDataProcessor):
 
 
     def get_sample_data(self, data):
-        data = data.loc[data[0] == self.sample_name] # 'P6.Rec7'
+        data = data.loc[data[0] == self.sample_name]
 
         return data
 
