@@ -1,11 +1,14 @@
 import pandas as pd
+from pathlib import Path
 
-from gap_data_processor import GapDataProcessor
-from lengths_data_processor import process_lengths_data
+from .gap_data_processor import GapDataProcessor
+from .lengths_data_processor import process_lengths_data
 
+here = Path(__file__).parent
+LENGTHS_PATH = here/'data/hs37d5.fa.fai'
+GAP_PATH = here/'data/gap.txt'
 Mb = 1000000
-LENGTHS_PATH = '../datasets/hs37d5.fa.fai'
-GAP_PATH = '../datasets/gap.txt'
+
 
 def init_lengths():
     lengths = pd.read_csv(LENGTHS_PATH, sep='\t', header=None)

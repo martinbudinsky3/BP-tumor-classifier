@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import scipy.stats as stats
 
-from utils import init_lengths, init_centromeres, init_chromosome_names, Mb
+from .utils import init_lengths, init_centromeres, init_chromosome_names, Mb
 
 LST_SMbs = [x for x in range(3, 12)]
 lengths = init_lengths()

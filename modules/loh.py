@@ -1,4 +1,4 @@
-from utils import init_lengths, init_chromosome_names, Mb
+from .utils import init_lengths, init_chromosome_names, Mb
 
 lengths = init_lengths()
 chromosome_names = init_chromosome_names()

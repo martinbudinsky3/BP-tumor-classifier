@@ -1,11 +1,9 @@
 import vcf
 
-from gap_data_processor import GapDataProcessor
-from lengths_data_processor import process_lengths_data
-from segments_data_processor import SegmentsDataProcessor, SegmentsDataProcessor2
-from lst import lst
-from tai import tai
-from loh import loh
+from .segments_data_processor import SegmentsDataProcessor, SegmentsDataProcessor2
+from .lst import lst
+from .tai import tai
+from .loh import loh
 
 
 class HRD:
