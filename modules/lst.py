@@ -88,7 +88,7 @@ def remove_centromeres(data):
         centromere_end = centromeres.loc[centromeres['Chromosome'] == _chr, 'End'].iloc[0]
 
         # drop segments that start and end in centromere  
-        data = data.drop(data[(data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)].index)
+        data = data.drop(data[(data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)].index).reset_index(drop=True)
 
         # cut segment that overlaps centromere from both sides
         row_df = data.loc[(data['Chromosome'] == _chr) & (data['Start'] < centromere_start) & (data['End'] > centromere_end)]
@@ -98,12 +98,16 @@ def remove_centromeres(data):
             data.loc[row.name, 'Length'] = centromere_start - row['Start']        
             data = insert_row(data, _chr, row['Copy Number'], row['End'] - centromere_end, centromere_end, row['End'], row.name + 1)
 
-        # cut segment that ends in centromere  
-        data.loc[(data['Chromosome'] == _chr) & (data['End'] >= centromere_start) & (data['End'] <= centromere_end), 'End'] = centromere_start
-
-        # cut segment that starts in centromere  
-        data.loc[(data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['Start'] <= centromere_end), 'Start'] = centromere_end
-
+        # cut segment that ends in centromere
+        end_in_centromere_cond = (data['Chromosome'] == _chr) & (data['End'] > centromere_start) & (data['End'] <= centromere_end)
+        data.loc[end_in_centromere_cond, 'End'] = centromere_start
+        data.loc[end_in_centromere_cond, 'Length'] = centromere_start - data.loc[end_in_centromere_cond, 'Start']
+        
+        # cut segment that starts in centromere
+        start_in_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['Start'] < centromere_end)
+        data.loc[start_in_centromere_cond, 'Start'] = centromere_end
+        data.loc[start_in_centromere_cond, 'Length'] = data.loc[start_in_centromere_cond, 'End'] - centromere_end
+        
     data = name_chr_arms(data)
 
     return data
