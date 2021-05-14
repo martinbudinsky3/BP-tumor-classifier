@@ -17,17 +17,19 @@ create_tabix() {
 
 if [ -z "$in_file" ]; 
 	then
-		for d in "$directory"*/ ; do	
-			for file in "$d"*"$end" ; do
+		for d in "$directory"/*/ ; do	
+			for file in "$d"*"$end".vcf ; do
 				[ -f "$file" ] || break
-				echo "$file"
+				echo "Creating tab index for $file"
 				create_tabix $file
+				echo "Tab index created"
 			done	
 		done;
 	
 	else
-		echo "$in_file"
+		echo "Creating tab index for  $in_file"
 		create_tabix $in_file;
+		echo "Tab index created"
 
 fi
 
