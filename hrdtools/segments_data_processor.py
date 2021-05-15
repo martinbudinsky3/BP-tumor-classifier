@@ -28,6 +28,8 @@ class SegmentsDataProcessor:
         self.data = pd.read_csv(filename, sep='\t', comment='#')
         self.data = self.process_data(self.data)
     
+    
+    # common preprocessing steps for all type of segments
     def process_data(self, data):
         data = self.reshape_data(data)
         data = self.process_values(data)
@@ -96,6 +98,7 @@ class SegmentsDataProcessor:
         return loh_data
 
 
+    # remove unnecessary columns and add new
     def reshape_data(self, data):
         data = data.loc[:, 'Chromosome Region':'Length']
 
@@ -105,6 +108,7 @@ class SegmentsDataProcessor:
         return data
 
 
+    # process incorrect values or values that are in wrong format 
     def process_values(self, data):
         data[['Chromosome Region', 'Start', 'End']] = data['Chromosome Region'].apply(self.process_chromosome_reg_col)
         
@@ -116,6 +120,7 @@ class SegmentsDataProcessor:
         return data
 
 
+    # process Chromosome region column values
     def process_chromosome_reg_col(self, text):
         chromosome, rest = text.split(':')
         start, end = rest.split('-')
@@ -142,8 +147,9 @@ class SegmentsDataProcessor:
         return data
 
     
+    # transform values from Event column to numeric copy number values
     def transform_cn_values(self, data):
-        category_to_number = {'Copy Number' : {'Big Loss' : 0,
+        category_to_number = {'Copy Number' : {
                                 'CN Loss' : 1,
                                 'CN Gain' : 3,
                                 'High Copy Gain' : 4}
@@ -153,6 +159,7 @@ class SegmentsDataProcessor:
         return data
     
     
+    # get only copy number variation segments 
     def remove_not_cnv_rows(self, data):
         data = data.loc[(data['Event'] != 'LOH') & (data['Event'] != 'Allelic Imbalance') & (data['Event'] != 'Homozygous Copy Loss')]
 
@@ -171,12 +178,14 @@ class SegmentsDataProcessor:
         return data
     
     
+    # get only allelic imbalance segments 
     def remove_not_ai_rows(self, data):
         data = data.loc[data['Event'] == 'Allelic Imbalance']
 
         return data
     
     
+    # get only loss of heterozygozity segments 
     def remove_not_loh_rows(self, data):
         data = data.loc[data['Event'] == 'LOH']
 
@@ -190,8 +199,32 @@ class SegmentsDataProcessor:
     
     
 class SegmentsDataProcessor2(SegmentsDataProcessor):
+    """
+    Class for preprocessing of segmental reports without header
+        
+    Methods
+    -------
+    get_cnv_segments()
+        Returns preprocessed data of segments with copy number variation
+        
+    get_ai_segments()
+        Returns preprocessed data of segments with allelic imbalance
+        
+    get_loh_segments()
+        Returns preprocessed data of segments with loss of heterozygozity
+    """
     
     def __init__(self, filename, sample_name):
+        """
+        Parameters
+        ----------
+        filename : str
+            Path to segmental report
+            
+        sample_name: str
+            Name of sample in segmental report
+        """
+        
         self.sample_name = sample_name
         self.data =  pd.read_csv(filename, sep='\t', header=None)
         self.data = self.process_data(self.data)
