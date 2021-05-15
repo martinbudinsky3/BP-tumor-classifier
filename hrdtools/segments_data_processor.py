@@ -2,8 +2,29 @@ import pandas as pd
 
 
 class SegmentsDataProcessor:
+    """
+    Class for preprocessing of segmental reports
+        
+    Methods
+    -------
+    get_cnv_segments()
+        Returns preprocessed data of segments with copy number variation
+        
+    get_ai_segments()
+        Returns preprocessed data of segments with allelic imbalance
+        
+    get_loh_segments()
+        Returns preprocessed data of segments with loss of heterozygozity
+    """
     
     def __init__(self, filename):
+        """
+        Parameters
+        ----------
+        filename : str
+            Path to segmental report
+        """
+        
         self.data = pd.read_csv(filename, sep='\t', comment='#')
         self.data = self.process_data(self.data)
     
@@ -17,7 +38,16 @@ class SegmentsDataProcessor:
         return data
         
         
-    def get_cnv_segments(self, sex='female'):    
+    def get_cnv_segments(self):
+        """
+        Method that returns preprocessed data of segments with copy number variation from input segmental report
+            
+        Returns
+        -------
+        cnv_data: pandas.DataFrame
+            DataFrame with segments with copy number variation
+        """
+        
         cnv_data = self.data.copy()
         cnv_data = self.remove_not_cnv_rows(cnv_data)
         cnv_data = self.rename_event_column(cnv_data)
@@ -28,7 +58,16 @@ class SegmentsDataProcessor:
         return cnv_data
     
     
-    def get_ai_segments(self):    
+    def get_ai_segments(self):
+        """
+        Method that returns preprocessed data of segments with allelic imbalance from input segmental report
+            
+        Returns
+        -------
+        ai_data: pandas.DataFrame
+            DataFrame with segments with allelic imbalance
+        """
+        
         ai_data = self.data.copy()
         ai_data = self.remove_not_ai_rows(ai_data)
         ai_data = self.drop_event_column(ai_data)
@@ -38,6 +77,16 @@ class SegmentsDataProcessor:
     
     
     def get_loh_segments(self):
+        """
+        Method that returns preprocessed data of segments with allelic imbalance and loss of heterozygozity
+        from input segmental report
+            
+        Returns
+        -------
+        loh_data: pandas.DataFrame
+            DataFrame with segments with allelic imbalance and loss of heterozygozity
+        """
+        
         loh_data = self.data.copy()
         loh_data = self.remove_not_loh_rows(loh_data)
         loh_data = self.drop_event_column(loh_data)

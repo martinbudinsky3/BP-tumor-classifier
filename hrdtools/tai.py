@@ -5,6 +5,24 @@ centromeres = init_centromeres()
 chromosome_names = init_chromosome_names()
 
 def tai(data, TELOMERE_SIZE=2*Mb):
+    """
+    Implementation of TAI method
+    
+    Parameters
+    ----------
+    data: pandas.DataFrame
+        DataFrame containing preprocessed segmental report data
+        
+    TELOMERE_SIZE=2000000: int, optional
+        Value of parameter TELOMERE_SIZE (lengths of telomeres) of TAI method.
+        If not provided, TAI is count for default value of parameter 2 Mb
+    
+    Returns
+    -------
+    tai_score: int
+        TAI score of sample
+    """
+    
     ntai = 0
     for _chr in chromosome_names:
         chr_data = data.loc[data['Chromosome'] == _chr]

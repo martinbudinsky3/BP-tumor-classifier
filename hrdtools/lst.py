@@ -11,6 +11,34 @@ chromosome_names = init_chromosome_names()
 
 
 def lst(data, vcf_reader=None, sample_name=None, LST_SMb_param=11):
+    """
+    Implementation of LST method
+    
+    Parameters
+    ----------
+    data: pandas.DataFrame
+        DataFrame containing preprocessed segmental report data
+        
+    vcf_reader: vcf.Reader, optional
+        Instance of vcf.Reader for VCF file of input sample. If not provided, LST is count only based on copy numbers.
+        
+    sample_name: str, optional
+        Name of sample in VCF file. If not provided, LST is count only based on copy numbers.
+        
+    LST_SMb_param=11: int, optional
+        Value of parameter LST_SMb (in Mb) of LST method. If not provided, LST is count for value of parameter 3 - 11 Mb
+    
+    Returns
+    -------
+    lst, dna_index: tuple
+        If value of LST_SMb_param is provided function returns LST score for provided parameter value
+        and DNA index of sample
+        
+    lsts, dna_index: tuple
+        If value of LST_SMb_param is not provided function returns dictionary with LST scores for parameter value 3 - 11 Mb 
+        and DNA index of sample. Dictionary with LST scores contains keys in format: LST_<LST_SMb>Mb.
+    """
+    
     data = fill_segments(data)
     dna_index = count_dna_index(data)
         
@@ -35,6 +63,7 @@ def lst(data, vcf_reader=None, sample_name=None, LST_SMb_param=11):
         return lsts, dna_index      
 
 
+# insert new segment into dataframe
 def insert_row(df, _chr, cn, length, start, end, index):
     new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
@@ -47,6 +76,7 @@ def insert_row(df, _chr, cn, length, start, end, index):
     return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
 
 
+# fill gaps in segmented genome profile with segments with copy number 2
 def fill_segments(data):
     df = data.copy()
     index_df = 0
@@ -82,6 +112,7 @@ def fill_segments(data):
     return df
 
 
+# remove centromeric regions of chromosomes from segmented profile
 def remove_centromeres(data):
     for _chr in chromosome_names:
         centromere_start = centromeres.loc[centromeres['Chromosome'] == _chr, 'Start'].iloc[0]
@@ -113,6 +144,7 @@ def remove_centromeres(data):
     return data
 
 
+# name chromosome arms with 'p' and 'q' label
 def name_chr_arms(data):
     data['Arm'] = 'p'
     for _chr in chromosome_names:
@@ -123,6 +155,7 @@ def name_chr_arms(data):
     return data
 
 
+# count metric DNA index for sample as average_copy_number / 2
 def count_dna_index(data):
     cns = list(data['Copy Number'])
     weights = list(data['Length'])
@@ -296,6 +329,7 @@ def coercing(data, count_af=True, S_small=3*Mb):
     return df
 
 
+# count LST score for input sample
 def count_lsts(data, LST_SMb=11*Mb, S_small=3*Mb):
 
     lsts = 0

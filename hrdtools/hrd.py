@@ -7,8 +7,45 @@ from .loh import loh
 
 
 class HRD:
+    """
+    Class that preprocess input files and gets HRD scores for input sample
+        
+    Methods
+    -------
+    test_lst()
+        Returns LST score/scores and DNA index of sample
+        
+    test_tai()
+        Returns TAI score of sample
+        
+    test_loh()
+        Returns LOH score of sample
+        
+    test_all()
+        Returns LST, TAI, LOH scores, sum of these scores and DNA index of sample 
+    """
+    
     
     def __init__(self, seg_report_file, seg_report_file_with_header=True, seg_report_sample_name=None, vcf_file=None, vcf_sample_name=None):
+        """
+        Parameters
+        ----------
+        seg_report_file : str
+            Path to segmental report
+            
+        seg_report_file_with_header: boolean
+            Flag indicating if segmental report's file format has header
+            
+        seg_report_sample_name: str
+            Name of sample in segmental report, if segmental report's file format doesn't have header
+            
+        vcf_file: str
+            Path to VCF file
+        
+        vcf_sample_name: str
+            Name of sample in VCF file
+        """
+        
         if seg_report_file_with_header:
             self.sdp = SegmentsDataProcessor(seg_report_file)
         else:
@@ -23,6 +60,19 @@ class HRD:
     
         
     def test_lst(self, LST_SMb=None):
+        """
+        Method that returns LST score and DNA index of input sample
+        
+        Parameters
+        ----------
+        LST_SMb=None: int, optional
+            Value of parameter LST_SMb of LST method. If not provided, LST is count for value of parameter 3 - 11 Mb
+            
+        Returns
+        -------
+        Return value of lst function
+        """
+        
         if self.cnv_data is None:
             self.cnv_data = self.sdp.get_cnv_segments()
         vcf_reader = None
@@ -33,18 +83,60 @@ class HRD:
     
     
     def test_tai(self):
+        """
+        Method that returns TAI score of input sample
+        
+        Returns
+        -------
+        Return value of tai function
+        """
+        
         if self.ai_data is None:
             self.ai_data = self.sdp.get_ai_segments()
         return tai(self.ai_data)
     
     
     def test_loh(self):
+        """
+        Method that returns LOH score of input sample
+        
+        Returns
+        -------
+        Return value of loh function
+        """
+        
         if self.loh_data is None:
             self.loh_data = self.sdp.get_loh_segments()
         return loh(self.loh_data)
     
     
     def test_all(self, LST_SMb=11):
+        """
+        Method that returns LST, TAI, LOH scores, sum of these scores and DNA index of input sample
+        
+        Parameters
+        ----------
+        LST_SMb=11: int, optional
+            Value of parameter LST_SMb of LST method. If not provided, LST is count for value of parameter 3 - 11 Mb
+        
+        Returns
+        -------
+        scores: dict
+            Dictionary with following structure:
+            {
+                LST: int
+                    LST score of sample for parameter LST_SMb value
+                TAI: int
+                    TAI score of sample
+                LOH: int
+                    LOH score of sample
+                HRD: int
+                    Sum of LST, TAI and LOH scores of sample
+                DNA index: float
+                    DNA index of sample
+            }
+        """
+        
         lst_score, dna_index = self.test_lst(LST_SMb)
         tai_score = self.test_tai()
         loh_score = self.test_loh()
