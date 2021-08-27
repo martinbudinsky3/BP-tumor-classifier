@@ -40,7 +40,7 @@ class HRD:
             Name of sample in segmental report, if segmental report's file format doesn't have header
             
         vcf_file: str
-            Path to VCF file
+            Path to VCF file. There must exist tabix file with same name and in same folder as provided VCF file.
         
         vcf_sample_name: str
             Name of sample in VCF file
