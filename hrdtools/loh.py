@@ -31,14 +31,12 @@ def loh(data, LOH_TRESHOLD=15*Mb):
         centromere_start = centromeres.loc[centromeres['Chromosome'] == _chr, 'Start'].iloc[0]
         centromere_end = centromeres.loc[centromeres['Chromosome'] == _chr, 'End'].iloc[0]
         centromere_len = centromere_end - centromere_start
+        chr_len_without_centromere = chr_len - centromere_len
         
         long_loh_segments = chr_data.loc[(chr_data['Length'] > LOH_TRESHOLD)]
-        
-        sum_of_long_loh_segments_lengths = 0
-        for index, long_loh_segment in long_loh_segments.iterrows():
-            sum_of_long_loh_segments_lengths += long_loh_segment['Length']
-        
-        if sum_of_long_loh_segments_lengths < chr_len - centromere_len:
+        sum_of_long_loh_segments_lengths = long_loh_segments['Length'].sum()
+
+        if sum_of_long_loh_segments_lengths < chr_len_without_centromere:
             long_lohs += len(long_loh_segments.index)
 
     return long_lohs
