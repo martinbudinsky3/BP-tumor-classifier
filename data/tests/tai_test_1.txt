@@ -1,0 +1,31 @@
+#Sample = I062.007.WGS.Pre
+#Sample QC Score = 0.061521817
+#Processing Type = BAM ngCGH (matched)
+#Matched File = /Volumes/Vega/Osteosarcoma.NatComm.2018/P13.I062.007.Inform/I062.007.WGS.Control.bam
+#File = /Volumes/Vega/Osteosarcoma.NatComm.2018/P13.I062.007.Inform/I062.007.WGS.Pre.bam
+#Step = Systematic Correction
+#  Type = Quadratic Correction
+#  File = Organisms/Human/NCBI Build 37/SystematicCorrection/NGS/ngs_correction.txt
+#Step = Recenter Probes
+#  Type = Median
+#Step = Analysis
+#  Type = SNP-FASST2 Segmentation
+#  Significance Threshold = 1.0E-6
+#  Max Contiguous Probe Spacing (Kbp) = 1000.0
+#  Min number of probes per segment = 3
+#  High Gain = 0.6
+#  Gain = 0.18
+#  Loss = -0.18
+#  Big Loss = -1.0
+#  Male Sex Chromosomes Big Loss = -1.0
+#  3:1 Sex chromosome gain = 1.2
+#  4:1 Sex chromosome gain = 1.7
+#  Homozygous Frequency Threshold = 0.97
+#  Homozygous Value Threshold = 0.8
+#  Heterozygous Imbalance Threshold = 0.4
+#  Minimum LOH Length (KB) = 2000
+#  Minimum SNP Probe Density (Probes/MB) = 0.0
+#Organism = Human
+#Build = NCBI Build 37
+Chromosome Region	Event	Length	Cytoband	% of CNV Overlap	Probe Median	% Heterozygous	Probes	Count of Gene Symbols
+chr1:1,000,000-249,000,000	Allelic Imbalance	248000001	p35.3	8.338269552074673	0.3049086630344391		45	35
