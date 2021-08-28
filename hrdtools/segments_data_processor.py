@@ -98,7 +98,7 @@ class SegmentsDataProcessor:
         cnv_data: pandas.DataFrame
             DataFrame with segments with copy number variation
         """
-        
+
         cnv_data = self.data.copy()
         cnv_data = self.remove_not_cnv_rows(cnv_data)
         cnv_data = self.rename_event_column(cnv_data)

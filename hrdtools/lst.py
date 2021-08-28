@@ -62,54 +62,50 @@ def lst(data, vcf_reader=None, sample_name=None, LST_SMb_param=11):
 
         return lsts, dna_index      
 
-
-# insert new segment into dataframe
-def insert_row(df, _chr, cn, length, start, end, index):
-    new_segment = pd.DataFrame({
-        'Chromosome': [ _chr ],
-        'Copy Number': [ cn ],
-        'Length': [length],
-        'Start': [ start ],
-        'End': [ end ]
-    })
-
-    return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
-
-
+    
 # fill gaps in segmented genome profile with segments with copy number 2
 def fill_segments(data):
-    df = data.copy()
-    index_df = 0
+    filled_data = data.copy()
+    index_filled_data = 0
     normal_cn = 2
     
-    for index, row in data.iterrows():
-
+    for index, segment in data.iterrows():
         # first cnv region in chromosome
         if index == 0 or data.loc[index-1, 'Chromosome'] != data.loc[index, 'Chromosome']:
-            if row['Start'] != 0:
-                df = insert_row(df, row['Chromosome'], normal_cn, row['Start'], 0, row['Start'], index_df)
-                index_df += 1
+            if segment['Start'] != 0:
+                filled_data = insert_row(filled_data, segment['Chromosome'], normal_cn, 0, segment['Start'], index_filled_data)
+                index_filled_data += 1
 
         # not first cnv region in chromosome 
         elif data.loc[index-1, 'End'] != data.loc[index, 'Start']:
             prev = data.loc[index-1]
-
-            df = insert_row(df, row['Chromosome'], normal_cn, row['Start'] - prev['End'], prev['End'], row['Start'], index_df)
-            index_df += 1
+            filled_data = insert_row(filled_data, segment['Chromosome'], normal_cn, prev['End'], segment['Start'], index_filled_data)
+            index_filled_data += 1
 
         # last cnv region in chromosome
         if index == len(data) - 1 or data.loc[index+1, 'Chromosome'] != data.loc[index, 'Chromosome']:
+            chr_len = lengths.loc[segment['Chromosome'], 'Length']
+            if segment['End'] != chr_len:      
+                filled_data = insert_row(filled_data, segment['Chromosome'], normal_cn, segment['End'], chr_len, index_filled_data + 1)
+                index_filled_data += 1
 
-            chr_len = lengths.loc[row['Chromosome'], 'Length']
-            if row['End'] != chr_len:      
-                df = insert_row(df, row['Chromosome'], normal_cn, chr_len - row['End'], row['End'], chr_len, index_df+1)
-                index_df += 1
+        index_filled_data += 1
 
-        index_df += 1
+    filled_data = remove_centromeres(filled_data)
 
-    df = remove_centromeres(df)
+    return filled_data
 
-    return df
+
+# insert new segment into dataframe
+def insert_row(data, _chr, cn, start, end, index):
+    new_segment = pd.DataFrame({
+        'Chromosome': [ _chr ],
+        'Copy Number': [ cn ],
+        'Start': [ start ],
+        'End': [ end ]
+    })
+
+    return pd.concat([data.iloc[:index], new_segment, data.iloc[index:]]).reset_index(drop=True)
 
 
 # remove centromeric regions of chromosomes from segmented profile
@@ -118,26 +114,33 @@ def remove_centromeres(data):
         centromere_start = centromeres.loc[centromeres['Chromosome'] == _chr, 'Start'].iloc[0]
         centromere_end = centromeres.loc[centromeres['Chromosome'] == _chr, 'End'].iloc[0]
 
+        # TODO move to functions if there will be no need to pass lot of parameters
         # drop segments that start and end in centromere  
-        data = data.drop(data[(data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)].index).reset_index(drop=True)
+        start_and_end_in_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)
+        data = data.drop(data[start_and_end_in_centromere_cond].index).reset_index(drop=True)
 
         # cut segment that overlaps centromere from both sides
-        row_df = data.loc[(data['Chromosome'] == _chr) & (data['Start'] < centromere_start) & (data['End'] > centromere_end)]
-        if not row_df.empty:
-            row = row_df.iloc[0]
-            data.loc[row.name, 'End'] = centromere_start
-            data.loc[row.name, 'Length'] = centromere_start - row['Start']        
-            data = insert_row(data, _chr, row['Copy Number'], row['End'] - centromere_end, centromere_end, row['End'], row.name + 1)
+        overlaps_centromere_from_both_sides_cond = (data['Chromosome'] == _chr) & (data['Start'] < centromere_start) & (data['End'] > centromere_end)
+        segments_overlaping_centromere = data.loc[overlaps_centromere_from_both_sides_cond]
+        if not segments_overlaping_centromere.empty:
+            segment_overlaping_centromere = segments_overlaping_centromere.iloc[0]
+            data.loc[segment_overlaping_centromere.name, 'End'] = centromere_start
+            data = insert_row(
+                data, 
+                _chr, 
+                segment_overlaping_centromere['Copy Number'], 
+                centromere_end, 
+                segment_overlaping_centromere['End'], 
+                segment_overlaping_centromere.name + 1
+            )
 
         # cut segment that ends in centromere
         end_in_centromere_cond = (data['Chromosome'] == _chr) & (data['End'] > centromere_start) & (data['End'] <= centromere_end)
         data.loc[end_in_centromere_cond, 'End'] = centromere_start
-        data.loc[end_in_centromere_cond, 'Length'] = centromere_start - data.loc[end_in_centromere_cond, 'Start']
         
         # cut segment that starts in centromere
         start_in_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['Start'] < centromere_end)
         data.loc[start_in_centromere_cond, 'Start'] = centromere_end
-        data.loc[start_in_centromere_cond, 'Length'] = data.loc[start_in_centromere_cond, 'End'] - centromere_end
         
     data = name_chr_arms(data)
 
@@ -157,6 +160,7 @@ def name_chr_arms(data):
 
 # count metric DNA index for sample as average_copy_number / 2
 def count_dna_index(data):
+    data = update_segments_lengths(data)
     cns = list(data['Copy Number'])
     weights = list(data['Length'])
     normal_cn = 2
@@ -177,12 +181,10 @@ def count_dna_index(data):
     return dna_index
 
 
-# function that checks if vcf record has required quality
-def has_quality(record, qual_threshold = 50):
-    info = record.INFO
-    return record.QUAL > qual_threshold and ('QD' not in info.keys() or info['QD'] > 10.0) and ('MQ' not in info.keys() or info['MQ'] > 40.0) \
-        and ('FS' not in info.keys() or info['FS'] < 30.0 ) and ('SOR' not in info.keys() or info['SOR'] < 3.0) \
-        and ('MQRankSum' not in info.keys() or info['MQRankSum'] > -12.5) and ('ReadPosRankSum' not in info.keys() or info['ReadPosRankSum'] > -8.0)
+def update_segments_lengths(data):
+    data['Length'] = data['End'] - data['Start']
+    
+    return data
 
 
 # function for counting allelic frequencies for each segment
@@ -190,10 +192,9 @@ def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
     data_with_af = data.copy()
     data_with_af['Allele Frequencies'] = [list() for x in range(len(data_with_af.index))]
 
-    for index, row in data_with_af.iterrows():
-
+    for index, segment in data_with_af.iterrows():
         try:
-            segment_records = vcf_reader.fetch(row['Chromosome'], row['Start'], row['End'])
+            segment_records = vcf_reader.fetch(segment['Chromosome'], segment['Start'], segment['End'])
             allele_freqs = []
         
             for record in segment_records:
@@ -213,60 +214,102 @@ def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
     return data_with_af
 
 
-# insert new segment that was created by linking - segment without allelic frequencies
-def insert_row_without_af(df, _chr, cn, length, start, end, arm, index):
-    new_segment = pd.DataFrame({
-        'Chromosome': [ _chr ],
-        'Copy Number': [ cn ],
-        'Length': [length],
-        'Start': [ start ],
-        'End': [ end ],
-        'Arm': [arm]
-    })
-
-    return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
+# function that checks if vcf record has required quality
+def has_quality(record, qual_threshold = 50):
+    info = record.INFO
+    return record.QUAL > qual_threshold and ('QD' not in info.keys() or info['QD'] > 10.0) and ('MQ' not in info.keys() or info['MQ'] > 40.0) \
+        and ('FS' not in info.keys() or info['FS'] < 30.0 ) and ('SOR' not in info.keys() or info['SOR'] < 3.0) \
+        and ('MQRankSum' not in info.keys() or info['MQRankSum'] > -12.5) and ('ReadPosRankSum' not in info.keys() or info['ReadPosRankSum'] > -8.0)
 
 
-# insert new segment that was created by linking 
-def insert_row_with_af(df, _chr, cn, length, start, end, allele_freqs, arm, index):
-    new_segment = pd.DataFrame({
-        'Chromosome': [ _chr ],
-        'Copy Number': [ cn ],
-        'Length': [length],
-        'Start': [ start ],
-        'End': [ end ],
-        'Allele Frequencies': [allele_freqs],
-        'Arm': [arm]
-    })
+# coercing function
+def coercing(data, count_af=True, S_small=3*Mb):
+    data = update_segments_lengths(data)
+    
+    while len(data) > 0:
+        # get smallest segment
+        smallest_segment = data[data['Length'] == data['Length'].min()].iloc[0]
+        index = smallest_segment.name
 
-    return pd.concat([df.iloc[:index], new_segment, df.iloc[index:]]).reset_index(drop=True)
+        # filter out?
+        if smallest_segment['Length'] < S_small:
+            # not first or last segment of profile?
+            if index != 0 and index != len(data) - 1:
+                prev = data.loc[ index-1 ]
+                _next = data.loc[ index+1 ]
+
+                # can link?
+                if prev['Chromosome'] == _next['Chromosome'] and prev['Arm'] == _next['Arm'] and prev['Copy Number'] == _next['Copy Number']:
+                    # if sample has vcf data check allelic frequencies else join only based on copy number
+                    if not count_af:
+                        data = link_segments_without_af(data, prev, _next)
+                    elif have_equal_allele_freqs(prev, _next):
+                        data = link_segments_with_af(data, prev, _next, smallest_segment)
+
+            # delete small segment
+            data = data.drop(index=index).reset_index(drop=True)
+
+        # if there are no small segments left -> end
+        else:
+            break
+        
+    return data
 
 
 # linking adjacent segments of small filtered out segment - segments without allelic frequencies 
-def link_segments_without_af(df, prev, _next):
-    df = df.drop(index=prev.name)
-    df = df.drop(index=_next.name)
+def link_segments_without_af(data, prev, _next):
+    data = data.drop(index=prev.name)
+    data = data.drop(index=_next.name)
 
-    df = insert_row_without_af(df, prev['Chromosome'], prev['Copy Number'],  _next['End'] - prev['Start'],  prev['Start'], _next['End'], \
+    data = insert_row_without_af(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], \
                             prev['Arm'], prev.name)
 
-    return df
+    return data
+
+
+# insert new segment that was created by linking - segment without allelic frequencies
+def insert_row_without_af(data, _chr, cn, start, end, arm, index):
+    new_segment = pd.DataFrame({
+        'Chromosome': [ _chr ],
+        'Copy Number': [ cn ],
+        'Length': [ end - start ],
+        'Start': [ start ],
+        'End': [ end ],
+        'Arm': [arm]
+    })
+
+    return pd.concat([data.iloc[:index], new_segment, data.iloc[index:]]).reset_index(drop=True)
 
 
 # linking adjacent segments of small filtered out segment 
-def link_segments(df, prev, _next, small):
-    df = df.drop(index=prev.name)
-    df = df.drop(index=_next.name)
+def link_segments_with_af(data, prev, _next, small):
+    data = data.drop(index=prev.name)
+    data = data.drop(index=_next.name)
 
     new_allele_freqs = []
     new_allele_freqs.extend(prev['Allele Frequencies'])
     new_allele_freqs.extend(_next['Allele Frequencies'])
     new_allele_freqs.extend(small['Allele Frequencies'])
 
-    df = insert_row_with_af(df, prev['Chromosome'], prev['Copy Number'],  _next['End'] - prev['Start'],  prev['Start'], _next['End'], new_allele_freqs, \
+    data = insert_row_with_af(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], new_allele_freqs, \
                             prev['Arm'], prev.name)
 
-    return df
+    return data
+
+
+# insert new segment that was created by linking 
+def insert_row_with_af(data, _chr, cn, start, end, allele_freqs, arm, index):
+    new_segment = pd.DataFrame({
+        'Chromosome': [ _chr ],
+        'Copy Number': [ cn ],
+        'Length': [ end - start ],
+        'Start': [ start ],
+        'End': [ end ],
+        'Allele Frequencies': [allele_freqs],
+        'Arm': [arm]
+    })
+
+    return pd.concat([data.iloc[:index], new_segment, data.iloc[index:]]).reset_index(drop=True)
 
 
 # statistical tests for equality of allelic frequencies of two segments
@@ -286,61 +329,19 @@ def have_equal_allele_freqs(segment1, segment2):
 
     statistic, p_value = stats.ttest_ind(allele_freqs1, allele_freqs2, equal_var=False)
 
-    if p_value > alpha:
-        return True
-
-    return False
-
-
-# coercing function
-def coercing(data, count_af=True, S_small=3*Mb):
-    df = data.copy()
-
-    while len(df) > 0:
-
-        # get smallest segment
-        row = df[df['Length'] == df['Length'].min()].iloc[0]
-        index = row.name
-
-        # filter out?
-        if row['Length'] < S_small:
-
-            # not first or last segment of profile?
-            if index != 0 and index != len(df) - 1:
-                prev = df.loc[ index-1 ]
-                _next = df.loc[ index+1 ]
-
-                # can link?
-                if prev['Chromosome'] == _next['Chromosome'] and prev['Arm'] == _next['Arm'] and prev['Copy Number'] == _next['Copy Number']:
-                    
-                    # if sample has vcf data check allelic frequencies else join only based on copy number
-                    if not count_af:
-                        df = link_segments_without_af(df, prev, _next)
-                    elif have_equal_allele_freqs(prev, _next):
-                        df = link_segments(df, prev, _next, row)
-
-            # delete small segment
-            df = df.drop(index=index).reset_index(drop=True)
-
-        # if there are no small segments left -> end
-        else:
-            break
-        
-    return df
+    return p_value > alpha
 
 
 # count LST score for input sample
 def count_lsts(data, LST_SMb=11*Mb, S_small=3*Mb):
-
     lsts = 0
-    for index, row in data.iterrows():
-
+    for index, segment in data.iterrows():
         # not last segment in profile?
         if index != len(data) - 1:
 
             _next = data.loc[index+1]
-            if row['Length'] >= LST_SMb and _next['Length'] >= LST_SMb and _next['Chromosome'] == row['Chromosome'] and _next['Arm'] == row['Arm'] \
-                and _next['Start'] - row['End'] < S_small:
+            if segment['Length'] >= LST_SMb and _next['Length'] >= LST_SMb and _next['Chromosome'] == segment['Chromosome'] and _next['Arm'] == segment['Arm'] \
+                and _next['Start'] - segment['End'] < S_small:
 
                 lsts += 1
 
