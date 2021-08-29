@@ -44,7 +44,7 @@ def lst(data, vcf_reader=None, sample_name=None, LST_SMb_param=11):
         
     # if sample has vcf data coerce by copy numbers and allelic frequencies else only by copy numbers
     if not vcf_reader is None:
-        data = count_allele_freqs(data, vcf_reader, sample_name)
+        data = count_allelic_freqs(data, vcf_reader, sample_name)
         data = coercing(data)
     else:
         data = coercing(data, count_af=False)
@@ -205,14 +205,14 @@ def update_segments_lengths(data):
 
 
 # function for counting allelic frequencies for each segment
-def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
+def count_allelic_freqs(data, vcf_reader, sample, qual_threshold = 50):
     data_with_af = data.copy()
-    data_with_af['Allele Frequencies'] = [list() for x in range(len(data_with_af.index))]
+    data_with_af['Allelic Frequencies'] = [list() for x in range(len(data_with_af.index))]
 
     for index, segment in data_with_af.iterrows():
         try:
             segment_records = vcf_reader.fetch(segment['Chromosome'], segment['Start'], segment['End'])
-            allele_freqs = []
+            allelic_freqs = []
         
             for record in segment_records:
                 sample_data = record.genotype(sample).data
@@ -220,10 +220,10 @@ def count_allele_freqs(data, vcf_reader, sample, qual_threshold = 50):
                 if has_quality(record) and sample_data.GT != './.' and sample_data.GT != '0/0' and sample_data.AD != './.' and sample_data.AD != None \
                     and sample_data.AD[1] != 0:
 
-                    allele_freq = sample_data.AD[1] / (sample_data.AD[0] + sample_data.AD[1])
-                    allele_freqs.append(allele_freq)
+                    allelic_freq = sample_data.AD[1] / (sample_data.AD[0] + sample_data.AD[1])
+                    allelic_freqs.append(allelic_freq)
 
-            data_with_af.at[index, 'Allele Frequencies'] = allele_freqs
+            data_with_af.at[index, 'Allelic Frequencies'] = allelic_freqs
 
         except (ValueError, AttributeError) as e:
             continue
@@ -260,7 +260,7 @@ def coercing(data, count_af=True, S_small=3*Mb):
                     # if sample has vcf data check allelic frequencies else join only based on copy number
                     if not count_af:
                         data = link_segments_without_af(data, prev, _next)
-                    elif have_equal_allele_freqs(prev, _next):
+                    elif have_equal_allelic_freqs(prev, _next):
                         data = link_segments_with_af(data, prev, _next, smallest_segment)
 
             # delete small segment
@@ -303,26 +303,26 @@ def link_segments_with_af(data, prev, _next, small):
     data = data.drop(index=prev.name)
     data = data.drop(index=_next.name)
 
-    new_allele_freqs = []
-    new_allele_freqs.extend(prev['Allele Frequencies'])
-    new_allele_freqs.extend(_next['Allele Frequencies'])
-    new_allele_freqs.extend(small['Allele Frequencies'])
+    new_allelic_freqs = []
+    new_allelic_freqs.extend(prev['Allelic Frequencies'])
+    new_allelic_freqs.extend(_next['Allelic Frequencies'])
+    new_allelic_freqs.extend(small['Allelic Frequencies'])
 
-    data = insert_row_with_af(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], new_allele_freqs, \
+    data = insert_row_with_af(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], new_allelic_freqs, \
                             prev['Arm'], prev.name)
 
     return data
 
 
 # insert new segment that was created by linking 
-def insert_row_with_af(data, _chr, cn, start, end, allele_freqs, arm, index):
+def insert_row_with_af(data, _chr, cn, start, end, allelic_freqs, arm, index):
     new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
         'Copy Number': [ cn ],
         'Length': [ end - start ],
         'Start': [ start ],
         'End': [ end ],
-        'Allele Frequencies': [allele_freqs],
+        'Allelic Frequencies': [allelic_freqs],
         'Arm': [arm]
     })
 
@@ -330,21 +330,21 @@ def insert_row_with_af(data, _chr, cn, start, end, allele_freqs, arm, index):
 
 
 # statistical tests for equality of allelic frequencies of two segments
-def have_equal_allele_freqs(segment1, segment2):
+def have_equal_allelic_freqs(segment1, segment2):
     alpha = 0.05
     min_n = 3
 
-    allele_freqs1 = segment1['Allele Frequencies']
-    allele_freqs2 = segment2['Allele Frequencies']
+    allelic_freqs1 = segment1['Allelic Frequencies']
+    allelic_freqs2 = segment2['Allelic Frequencies']
 
     # check if there is sufficient number of observations, if no, segments are compared only by copy number
-    if len(allele_freqs1) < min_n and len(allele_freqs2) < min_n:
+    if len(allelic_freqs1) < min_n and len(allelic_freqs2) < min_n:
         return True
 
-    if len(allele_freqs1) < min_n or len(allele_freqs2) < min_n:
+    if len(allelic_freqs1) < min_n or len(allelic_freqs2) < min_n:
         return False
 
-    statistic, p_value = stats.ttest_ind(allele_freqs1, allele_freqs2, equal_var=False)
+    statistic, p_value = stats.ttest_ind(allelic_freqs1, allelic_freqs2, equal_var=False)
 
     return p_value > alpha
 
