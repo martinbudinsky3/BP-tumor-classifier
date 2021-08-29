@@ -114,36 +114,53 @@ def remove_centromeres(data):
         centromere_start = centromeres.loc[centromeres['Chromosome'] == _chr, 'Start'].iloc[0]
         centromere_end = centromeres.loc[centromeres['Chromosome'] == _chr, 'End'].iloc[0]
 
-        # TODO move to functions if there will be no need to pass lot of parameters
-        # drop segments that start and end in centromere  
-        start_and_end_in_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)
-        data = data.drop(data[start_and_end_in_centromere_cond].index).reset_index(drop=True)
-
-        # cut segment that overlaps centromere from both sides
-        overlaps_centromere_from_both_sides_cond = (data['Chromosome'] == _chr) & (data['Start'] < centromere_start) & (data['End'] > centromere_end)
-        segments_overlaping_centromere = data.loc[overlaps_centromere_from_both_sides_cond]
-        if not segments_overlaping_centromere.empty:
-            segment_overlaping_centromere = segments_overlaping_centromere.iloc[0]
-            data.loc[segment_overlaping_centromere.name, 'End'] = centromere_start
-            data = insert_row(
-                data, 
-                _chr, 
-                segment_overlaping_centromere['Copy Number'], 
-                centromere_end, 
-                segment_overlaping_centromere['End'], 
-                segment_overlaping_centromere.name + 1
-            )
-
-        # cut segment that ends in centromere
-        end_in_centromere_cond = (data['Chromosome'] == _chr) & (data['End'] > centromere_start) & (data['End'] <= centromere_end)
-        data.loc[end_in_centromere_cond, 'End'] = centromere_start
-        
-        # cut segment that starts in centromere
-        start_in_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['Start'] < centromere_end)
-        data.loc[start_in_centromere_cond, 'Start'] = centromere_end
+        data = drop_segments_inside_centromere(data, _chr, centromere_start, centromere_end)
+        data = cut_segments_overlapping_centromere(data, _chr, centromere_start, centromere_end)
+        data = cut_segments_ending_in_centromere(data, _chr, centromere_start, centromere_end)
+        data = cut_segments_starting_in_centromere(data, _chr, centromere_start, centromere_end)
         
     data = name_chr_arms(data)
 
+    return data
+
+
+def drop_segments_inside_centromere(data, _chr, centromere_start, centromere_end):
+    inside_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['End'] <= centromere_end)
+    data = data.drop(data[inside_centromere_cond].index).reset_index(drop=True)
+    
+    return data
+
+
+def cut_segments_overlapping_centromere(data, _chr, centromere_start, centromere_end):
+    overlaps_centromere_from_both_sides_cond = (data['Chromosome'] == _chr) & (data['Start'] < centromere_start) & (data['End'] > centromere_end)
+    segments_overlaping_centromere = data.loc[overlaps_centromere_from_both_sides_cond]
+    
+    if not segments_overlaping_centromere.empty:
+        segment_overlaping_centromere = segments_overlaping_centromere.iloc[0]
+        data.loc[segment_overlaping_centromere.name, 'End'] = centromere_start
+        data = insert_row(
+            data, 
+            _chr, 
+            segment_overlaping_centromere['Copy Number'], 
+            centromere_end, 
+            segment_overlaping_centromere['End'], 
+            segment_overlaping_centromere.name + 1
+        )
+    
+    return data
+
+
+def cut_segments_ending_in_centromere(data, _chr, centromere_start, centromere_end):
+    end_in_centromere_cond = (data['Chromosome'] == _chr) & (data['End'] > centromere_start) & (data['End'] <= centromere_end)
+    data.loc[end_in_centromere_cond, 'End'] = centromere_start
+    
+    return data
+
+
+def cut_segments_starting_in_centromere(data, _chr, centromere_start, centromere_end):
+    start_in_centromere_cond = (data['Chromosome'] == _chr) & (data['Start'] >= centromere_start) & (data['Start'] < centromere_end)
+    data.loc[start_in_centromere_cond, 'Start'] = centromere_end
+    
     return data
 
 
