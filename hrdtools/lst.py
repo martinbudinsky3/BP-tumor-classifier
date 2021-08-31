@@ -47,7 +47,7 @@ def lst(data, vcf_reader=None, sample_name=None, LST_SMb_param=11):
         data = count_allelic_freqs(data, vcf_reader, sample_name)
         data = coercing(data)
     else:
-        data = coercing(data, count_af=False)
+        data = coercing(data, count_allelic_freqs=False)
     
     # count lst only for LST_SMb_param size
     if not LST_SMb_param is None:
@@ -206,10 +206,9 @@ def update_segments_lengths(data):
 
 # function for counting allelic frequencies for each segment
 def count_allelic_freqs(data, vcf_reader, sample, qual_threshold = 50):
-    data_with_af = data.copy()
-    data_with_af['Allelic Frequencies'] = [list() for x in range(len(data_with_af.index))]
+    data['Allelic Frequencies'] = [list() for x in range(len(data.index))]
 
-    for index, segment in data_with_af.iterrows():
+    for index, segment in data.iterrows():
         try:
             segment_records = vcf_reader.fetch(segment['Chromosome'], segment['Start'], segment['End'])
             allelic_freqs = []
@@ -223,12 +222,12 @@ def count_allelic_freqs(data, vcf_reader, sample, qual_threshold = 50):
                     allelic_freq = sample_data.AD[1] / (sample_data.AD[0] + sample_data.AD[1])
                     allelic_freqs.append(allelic_freq)
 
-            data_with_af.at[index, 'Allelic Frequencies'] = allelic_freqs
+            data.at[index, 'Allelic Frequencies'] = allelic_freqs
 
         except (ValueError, AttributeError) as e:
             continue
 
-    return data_with_af
+    return data
 
 
 # function that checks if vcf record has required quality
@@ -240,7 +239,7 @@ def has_quality(record, qual_threshold = 50):
 
 
 # coercing function
-def coercing(data, count_af=True, S_small=3*Mb):
+def coercing(data, count_allelic_freqs=True, S_small=3*Mb):
     data = update_segments_lengths(data)
     
     while len(data) > 0:
@@ -258,10 +257,10 @@ def coercing(data, count_af=True, S_small=3*Mb):
                 # can link?
                 if prev['Chromosome'] == _next['Chromosome'] and prev['Arm'] == _next['Arm'] and prev['Copy Number'] == _next['Copy Number']:
                     # if sample has vcf data check allelic frequencies else join only based on copy number
-                    if not count_af:
-                        data = link_segments_without_af(data, prev, _next)
+                    if not count_allelic_freqs:
+                        data = link_segments_without_allelic_freqs(data, prev, _next)
                     elif have_equal_allelic_freqs(prev, _next):
-                        data = link_segments_with_af(data, prev, _next, smallest_segment)
+                        data = link_segments_with_allelic_freqs(data, prev, _next, smallest_segment)
 
             # delete small segment
             data = data.drop(index=index).reset_index(drop=True)
@@ -274,18 +273,18 @@ def coercing(data, count_af=True, S_small=3*Mb):
 
 
 # linking adjacent segments of small filtered out segment - segments without allelic frequencies 
-def link_segments_without_af(data, prev, _next):
+def link_segments_without_allelic_freqs(data, prev, _next):
     data = data.drop(index=prev.name)
     data = data.drop(index=_next.name)
 
-    data = insert_row_without_af(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], \
+    data = insert_row_without_allelic_freqs(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], \
                             prev['Arm'], prev.name)
 
     return data
 
 
 # insert new segment that was created by linking - segment without allelic frequencies
-def insert_row_without_af(data, _chr, cn, start, end, arm, index):
+def insert_row_without_allelic_freqs(data, _chr, cn, start, end, arm, index):
     new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
         'Copy Number': [ cn ],
@@ -299,7 +298,7 @@ def insert_row_without_af(data, _chr, cn, start, end, arm, index):
 
 
 # linking adjacent segments of small filtered out segment 
-def link_segments_with_af(data, prev, _next, small):
+def link_segments_with_allelic_freqs(data, prev, _next, small):
     data = data.drop(index=prev.name)
     data = data.drop(index=_next.name)
 
@@ -308,14 +307,14 @@ def link_segments_with_af(data, prev, _next, small):
     new_allelic_freqs.extend(_next['Allelic Frequencies'])
     new_allelic_freqs.extend(small['Allelic Frequencies'])
 
-    data = insert_row_with_af(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], new_allelic_freqs, \
+    data = insert_row_with_allelic_freqs(data, prev['Chromosome'], prev['Copy Number'],  prev['Start'], _next['End'], new_allelic_freqs, \
                             prev['Arm'], prev.name)
 
     return data
 
 
 # insert new segment that was created by linking 
-def insert_row_with_af(data, _chr, cn, start, end, allelic_freqs, arm, index):
+def insert_row_with_allelic_freqs(data, _chr, cn, start, end, allelic_freqs, arm, index):
     new_segment = pd.DataFrame({
         'Chromosome': [ _chr ],
         'Copy Number': [ cn ],

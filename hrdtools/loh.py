@@ -5,6 +5,7 @@ centromeres = init_centromeres()
 chromosome_names = init_chromosome_names()
 
 
+# TODO add optional boolean parameter to determine a way for applying condition that only segments shorter than chromosome length are counted to result score
 def loh(data, LOH_TRESHOLD=15*Mb):
     """
     Implementation of LOH method
@@ -38,5 +39,7 @@ def loh(data, LOH_TRESHOLD=15*Mb):
 
         if sum_of_long_loh_segments_lengths < chr_len_without_centromere:
             long_lohs += len(long_loh_segments.index)
+        else:
+            print(long_loh_segments)
 
     return long_lohs
