@@ -96,9 +96,18 @@ class HRD:
         return tai(self.ai_data)
     
     
-    def test_loh(self):
+    def test_loh(self, with_centromere=True):
         """
         Method that returns LOH score of input sample
+        
+        Parameters
+        ----------
+        with_centromere=True: bool, optional
+            Flag indicating the way in which condition, that only segments shorter than chromosome length are counted to result score, should be applied.
+            If the flag is set to True, algorithm will not count to result score only segments with length of whole chromosome (even with centromere),
+            assuming that variant caller joins segments adjacent with centromere.
+            Although if the flag is set to False, algorithm will not count to result score even segments from one chromosome 
+            their lenghts sums to length of chromosome (without centromere).
         
         Returns
         -------
@@ -107,7 +116,7 @@ class HRD:
         
         if self.loh_data is None:
             self.loh_data = self.sdp.get_loh_segments()
-        return loh(self.loh_data)
+        return loh(self.loh_data, with_centromere=with_centromere)
     
     
     def test_all(self, LST_SMb=11):
