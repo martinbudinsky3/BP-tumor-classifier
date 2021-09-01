@@ -65,5 +65,5 @@ def count_chr_long_lohs_without_centromere(long_loh_segments, _chr, chr_len, cen
 
     if sum_of_long_loh_segments_lengths < chr_len_without_centromere:
         return len(long_loh_segments.index)
-
+    
     return 0
